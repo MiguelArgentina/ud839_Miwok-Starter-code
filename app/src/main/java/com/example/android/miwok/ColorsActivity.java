@@ -1,19 +1,64 @@
 package com.example.android.miwok;
 
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
 public class ColorsActivity extends AppCompatActivity {
+    /**
+     * Handles audio focus when playing a sound file
+     */
+    private AudioManager mAudioManager;
 
     /**
      * Handles playback of all the sound files
      */
     private MediaPlayer mMediaPlayer;
+    /**
+     * This listener gets triggered whenever the audio focus changes
+     * (i.e., we gain or lose audio focus because of another app or device).
+     */
+    AudioManager.OnAudioFocusChangeListener mOnAudioFocusChangeListener =
+            new AudioManager.OnAudioFocusChangeListener() {
+                @Override
+                public void onAudioFocusChange(int focusChange) {
+                    if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ||
+                            focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+                        mMediaPlayer.pause();
+                        mMediaPlayer.seekTo(0);
+                    } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                        mMediaPlayer.start();
+                    } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                        releaseMediaPlayer();
+                    }
+                }
+            };
+    /**
+     * This listener gets triggered when the {@link MediaPlayer} has completed
+     * playing the audio file.
+     */
+    private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
+        @Override
+        public void onCompletion(MediaPlayer mediaPlayer) {
+            releaseMediaPlayer();
+        }
+    };
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        releaseMediaPlayer();
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +67,8 @@ public class ColorsActivity extends AppCompatActivity {
 
         assert getSupportActionBar() != null;   //null check
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);   //show back button
+
+        mAudioManager = (AudioManager) getSystemService(getBaseContext().AUDIO_SERVICE);
 
 
         // Create an array of words
@@ -40,18 +87,36 @@ public class ColorsActivity extends AppCompatActivity {
         // simple_list_item_1.xml layout resource defined in the Android framework.
         // This list item layout contains a single {@link TextView}, which the adapter will set to
         // display a single word.
-        WordAdapter itemsAdapter = new WordAdapter(this, words, R.color.category_colors);
+        RecyclerView mRecyclerView1;
+        CustomWordAdapter mAdapter;
+        mRecyclerView1 = findViewById(R.id.list);
+        mAdapter = new CustomWordAdapter(words, R.color.category_colors, new OnRecyclerClickListener() {
+            @Override
+            public void onRecyclerViewItemClicked(int position, int id) {
+                Toast.makeText(getApplicationContext(), "" + position, Toast.LENGTH_SHORT).show();
+                // Get the {@link Word} object at the given position the user clicked on
+                Word word = words.get(position);
+                releaseMediaPlayer();
 
-        // Find the {@link ListView} object in the view hierarchy of the {@link Activity}.
-        // There should be a {@link ListView} with the view ID called list, which is declared in the
-        // word_list.xml layout file.
+                //Request AudioFocus for playback
+                int result = mAudioManager.requestAudioFocus(mOnAudioFocusChangeListener,
+                        AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
 
-        // Make the {@link ListView} use the {@link ArrayAdapter} we created above, so that the
-        // {@link ListView} will display list items for each word in the list of words.
-        // Do this by calling the setAdapter method on the {@link ListView} object and pass in
-        // 1 argument, which is the {@link ArrayAdapter} with the variable name itemsAdapter.
+                //Check if audio focus was granted to play the file
+                if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                    mMediaPlayer = MediaPlayer.create(ColorsActivity.this, word.getAudioResourceId());
+                    // Start the audio file
+                    mMediaPlayer.start();
+                    mMediaPlayer.setOnCompletionListener(mCompletionListener);
+                }
 
-        ListView listView = findViewById(R.id.list);
+
+            }
+        });
+        mRecyclerView1.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+        mRecyclerView1.setItemAnimator(new DefaultItemAnimator());
+        mRecyclerView1.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
+        mRecyclerView1.setAdapter(mAdapter);
 
 
 /*
@@ -83,13 +148,25 @@ public class ColorsActivity extends AppCompatActivity {
         );*/
 
 
-        // Make the {@link ListView} use the {@link ArrayAdapter} we created above, so that the
-        // {@link ListView} will display list items for each word in the list of words.
-        // Do this by calling the setAdapter method on the {@link ListView} object and pass in
-        // 1 argument, which is the {@link ArrayAdapter} with the variable name itemsAdapter.
-        listView.setAdapter(itemsAdapter);
+    }
 
+    /*
+     * Clean up the media player by releasing its resources.
+     */
 
+    private void releaseMediaPlayer() {
+        /* If the media player is not null, then it may be currently playing a sound.*/
+        if (mMediaPlayer != null) {
+            /* Regardless of the current state of the media player, release its resources
+            // because we no longer need it.*/
+            mMediaPlayer.release();
+
+            /* Set the media player back to null. For our code, we've decided that
+            // setting the media player to null is an easy way to tell that the media player
+            // is not configured to play an audio file at the moment.*/
+            mMediaPlayer = null;
+            mAudioManager.abandonAudioFocus(mOnAudioFocusChangeListener);
+        }
     }
 
 

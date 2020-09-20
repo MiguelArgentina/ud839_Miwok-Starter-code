@@ -65,7 +65,6 @@ public class WordAdapter extends ArrayAdapter<Word> {
         // set this text on the number TextView
         if (currentWord.hasImage()) {
             miwokImageView.setImageResource(currentWord.getImageResourceId());
-
         } else {
             miwokImageView.setVisibility(View.GONE);
         }

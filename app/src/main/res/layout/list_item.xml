@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/textaudioContainer2"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal">
@@ -25,7 +26,7 @@
         <LinearLayout
             android:id="@+id/textContainer"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="8"
             android:orientation="vertical"
             android:paddingLeft="16dp">
@@ -50,12 +51,13 @@
 
         <ImageView
             android:id="@+id/audioResourceId"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:layout_gravity="center"
-            android:layout_weight="2"
+            android:layout_marginEnd="16dp"
             android:clickable="true"
-            android:src="@drawable/play_button" />
+            android:layout_marginRight="16dp"
+            android:src="@drawable/baseline_play_arrow_white_24" />
 
     </LinearLayout>
 
